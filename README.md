@@ -182,9 +182,41 @@ Confirmed from live captures:
 
 - **Temperature index:** `0`=cold, `1`=20 °C, `2`=30 °C, `3`=40 °C, `4`=60 °C
 - **Spin index:** `0`=none, `1`=400, `2`=800, `3`=1000/1200, `4`=max
-- **Soil:** `0`–`3`
-- **Selector** = base program; not a clean table yet. Observed: program A → selector `6`,
-  program B → selector `2`. Map the rest with the capture method in §11.
+- **Soil:** `0`–`3`. **Soil does not change the cycle duration** — it only affects wash
+  intensity. Duration is fixed by the program (selector), not settable as a value.
+
+### Selector → program (measured on a CSW 475D/5-S)
+
+The **selector byte `[6]` picks one of the machine's built-in dial programs**, and the
+program determines the duration (there is no duration field). Mapped by sending each
+selector and reading the machine's display (reference config: 40 °C / 1200 spin):
+
+| Selector | Time | Temp / spin | Notes |
+|---:|---|---|---|
+| 0 | — | — | OFF — `START` gives error **E15** |
+| 1 | 59 min | 40° · 1000 | |
+| 2 | (valid) | — | confirmed valid in earlier captures; duration not measured |
+| 3 | 2h29 | 40° · 1000 | cottons-class |
+| 4 | 2h39 | 40° · 1000 | cottons-class |
+| 5 | 1h15 | **respects** your temp/spin | |
+| 6 | 54 min | **respects** your temp/spin | default ★ |
+| 7 | 10 min | forces **cold · 400** | rapid/quick |
+| 8 | 28 min | forces **cold** · 1000 | rapid |
+| 9 | 2h19 | 40° · 1000 | cottons-class |
+| 10 | 48 min | 40° · 1000 | rapid |
+| 11 | 2h00 | forces **cold · no spin** | wool/delicate-class |
+| 12 | 2h08 | forces **cold · no spin** | delicate-class |
+| 13 | 2h08 | (identical to 12) | |
+| 14 | 59 min | **dryer** — "ready to iron" | drying program (washer-dryer) |
+| 15 | 2h16 | 40° · 1000 | cottons-class |
+
+Notes:
+- Most programs **force their own temp/spin** (the values you send are ignored); only `5`
+  and `6` honour them. Spin displays capped at 1000 even when 1200 is requested.
+- This index is **per-unit dial order** and does **not** match the app's internal program
+  list 1:1, so the measured times — not any name table — are authoritative. Names in the
+  app's data that line up by duration: Rapid 14/30/44, Daily 59, Cottons, Wool, Delicates,
+  Ecomix 20, plus dryer programs.
 
 ## 8. CRC-16 (`NFCUtility.crc16`) — validated
 
