@@ -6,7 +6,7 @@ Two command builders:
   - build_start_cycle()  -> action 0x0b, 18 bytes  (the VALIDATED path that drives the machine)
   - build_store_program_cycle() -> action 0x0a, 21 bytes  (earlier STORE path; structure only)
 
-CRC validated against a real tag read (reproduces 9C 40). See docs/PROTOCOL.md for the
+CRC validated against a real tag read (reproduces 9C 40). See README.md for the
 field index tables and the post-write ACK handshake.
 """
 
@@ -93,7 +93,7 @@ def write_apdus(record: bytes, file_id="00 02") -> list[str]:
     """Full APDU script to unlock + write the record to the washer.
 
     VALIDATED path: command file 0002, 16-zero write password.
-    (The older "AA" password + file 0001 path is a dead end — see docs/STATE.md.)
+    (The older "AA" password + file 0001 path is a dead end — see README.md.)
     """
     nlen = len(record)
     pwd = ("00 " * 16).strip()
