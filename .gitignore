@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Android build output / signing keys (generate your own — never commit keystores)
+android/build/
+*.apk
+*.keystore
+*.jks
+
+# Xcode user state / build
+ios/build/
+**/xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# Do NOT commit vendor-proprietary material:
+# the official app APK, decompiled sources, or data extracted from the app bundle.
+android-apk/
+extracted/
+*.log
