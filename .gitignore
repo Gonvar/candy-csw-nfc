@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+
+# Do NOT commit vendor-proprietary material:
+# the official app APK, decompiled sources, or data extracted from the app bundle.
+*.apk
+*.keystore
+*.jks
+*.log
