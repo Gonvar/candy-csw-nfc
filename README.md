@@ -215,21 +215,42 @@ def crc16(data: bytes) -> int:
 Writing the bytes is necessary but **not sufficient.** After the write, the washer's MCU
 must read file `0002` over I²C, act on it, and **rewrite the file with byte `[4]` flipped
 `80 → 00`** (command → response) plus a recomputed CRC. **That flip is the ACK** — the
-cycle loads/auto-starts at that point.
+cycle loads/auto-starts at that point. The MCU does **not** poll the EEPROM continuously;
+it has to be **told** a new command is waiting.
 
-The obstacle is **M24SR RF↔I²C arbitration:** while the phone holds an open RF session,
-the MCU is locked out of the EEPROM and can never read the command. In a capture, the
-command was written at t=34.2 s and the ACK appeared at t≈36.1 s (~2 s later); during that
-window the official app performs **~18 separate SELECT-app cycles** (it keeps releasing and
-reopening the RF session), handing the MCU read slots.
+The trigger is the M24SR's **GPO pin** (General Purpose Output), wired to the washer's MCU
+as an interrupt. After committing the command you **pulse the GPO low→high while keeping the
+RF field up**; the MCU sees the edge, reads file `0002` over I²C, processes it, and writes
+back the response. The GPO is driven from the RF side by writing the **system file (`E101`)**
+with the ST-proprietary command class **`A2`**.
 
-**Working recipe:** after the write, **poll for the ACK while releasing the RF field
-between reads.** Each iteration: drop the session (e.g. `IsoDep.close()` / fully drop the
-field) → wait ~250 ms → reconnect → re-`SELECT app` → `SELECT 0002` → `READ` → check
-whether byte `[4]` is now `00`. Keep the phone on the pad the whole time; expect the ACK
-within a few seconds. On platforms without explicit field control (iOS Core NFC), the
-levers are `restartPolling()` and invalidating/reopening the session — this is the part
-to validate per platform.
+**Validated recipe** (this is what makes the machine start — confirmed on a real unit):
+
+```
+(after the §10 write + NLEN commit, on the SAME open session — do NOT drop the field)
+wait 200 ms
+00 A4 04 00 07 D2 76 00 00 85 01 01 00     re-SELECT NDEF app   (see note)
+00 A4 00 0C 02 E1 01                         SELECT system file E101
+A2 D6 00 1F 01 00                            GPO low      -> 90 00
+wait 1200 ms
+00 A4 04 00 07 D2 76 00 00 85 01 01 00     re-SELECT NDEF app
+00 A4 00 0C 02 E1 01                         SELECT system file E101
+A2 D6 00 1F 01 01                            GPO high     -> 90 00
+--- then poll for the response, field still up: ---
+00 A4 04 00 07 D2 76 00 00 85 01 01 00     re-SELECT NDEF app
+00 A4 00 0C 02 00 02                         SELECT command file 0002
+00 B0 00 00 02 ; 00 B0 00 02 <nlen>          READ -> check byte[4] == 00  (repeat ~every 350 ms)
+```
+
+> **Note — the `6A82` trap:** the proprietary `A2` command drops the ISO 7816 application
+> context, so a plain `SELECT file` immediately afterwards returns `6A82` ("not found").
+> **Re-issue `SELECT NDEF app` before every `SELECT file`** in the handshake and the poll,
+> as shown above. (A capture that skips this is why the GPO step can appear to "fail.")
+
+**Dropping the RF field does *not* work.** Closing/reopening the `IsoDep` session to "give
+the MCU the bus" never produces an ACK — the MCU needs the GPO edge, not bus idle time. For
+platforms without raw `A2`/system-file access (e.g. iOS Core NFC), this GPO pulse is the
+open question; `restartPolling()` is the lever to try, but the GPO path is what is proven.
 
 ## 10. Full APDU sequences
 
@@ -252,7 +273,7 @@ to validate per platform.
 00 D6 00 00 02 00 00                        set NLEN = 0 (invalidate)
 00 D6 00 02 12 <18-byte START record>       UPDATE BINARY (write command) at offset 2
 00 D6 00 00 02 00 12                        set NLEN = 18 (commit)
---- then the §9 ACK poll: release field / reconnect / read 0002 until byte[4] == 00 ---
+--- then the §9 GPO handshake (field still up): pulse GPO low/high, poll 0002 until byte[4]==00 ---
 ```
 
 All steps return `90 00`, and a read-back of file `0002` matches the bytes written. The
@@ -284,12 +305,15 @@ is Candy's). Capture them from your own device:
 - Reading file `0001` (status) — perfect.
 - Writing the command to file `0002` — all `90 00`; read-back matches exactly.
 - VERIFY with 16 zeros → `90 00` (write unlocked).
-- Write **+ the §9 release-and-poll ACK loop** → machine accepts and starts the cycle.
+- Write **+ the §9 GPO low→high handshake (field kept up)** → machine accepts and starts
+  the cycle. **Confirmed end-to-end on a real unit.**
 
 **Dead ends**
 - Writing to file `0001` → `6982` (wrong file).
 - `"AA"` password → `63 C2` (wrong password path).
-- Holding one continuous RF session and polling → **no ACK** (MCU never gets the bus).
+- **Dropping the RF field / close+reopen the session to poll** → **no ACK.** The MCU needs
+  the GPO edge, not bus idle time. (This was an early hypothesis; it does not work.)
+- A plain `SELECT file` right after the `A2` GPO command → `6A82`; re-`SELECT NDEF app` first.
 - Removing the phone immediately after the write → no reaction.
 
 ## 13. Reference implementation

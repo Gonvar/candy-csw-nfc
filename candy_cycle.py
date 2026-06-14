@@ -118,4 +118,7 @@ if __name__ == "__main__":
     print("Write APDU script (paste into the Android probe / Core NFC):")
     for a in write_apdus(rec):
         print("  C", a)
-    print("\nThen poll file 0002 (release the RF field between reads) until byte[4] flips 80 -> 00.")
+    print("\nThen run the GPO handshake (keep the RF field up; see README §9):")
+    print("  00 A4 00 0C 02 E1 01 ; A2 D6 00 1F 01 00   (GPO low)  -> wait 1200ms")
+    print("  00 A4 00 0C 02 E1 01 ; A2 D6 00 1F 01 01   (GPO high)")
+    print("  re-SELECT NDEF app before each SELECT, then poll file 0002 until byte[4] flips 80 -> 00.")
