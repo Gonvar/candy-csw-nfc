@@ -180,7 +180,7 @@ enforces; set the `default_*` values within them.
 Confirmed from live captures:
 
 - **Temperature index:** `0`=cold, `1`=20 °C, `2`=30 °C, `3`=40 °C, `4`=60 °C
-- **Spin index:** `0`=none, `1`=400, `2`=800, `3`=1000/1200, `4`=max
+- **Spin index:** `0`=none, `1`=400, `2`=800, `3`=1000, `4`=1400
 - **Soil:** `0`–`3`. **Soil does not change the cycle duration** — it only affects wash
   intensity. Duration is fixed by the program (selector), not settable as a value.
 
@@ -188,30 +188,43 @@ Confirmed from live captures:
 
 The **selector byte `[6]` picks one of the machine's built-in dial programs**, and the
 program determines the duration (there is no duration field). Mapped by sending each
-selector and reading the machine's display (reference config: 40 °C / 1200 spin):
+selector and reading the machine's display.
+
+> **Corrected 2026-08-11.** An earlier revision of this table was captured with a single
+> 40 °C / 1200 reference config and drew two wrong conclusions from it — that most programs
+> force their own temperature, and that spin is capped at 1000. Both were artefacts of that
+> config: sending 40 ° and seeing 40 ° cannot show whether the value was honoured or forced,
+> and "1200" was really index `3`, which *is* 1000. Re-measured by sending values that
+> differ from the defaults (**60 °C / index 4**), which makes the machine's response
+> unambiguous.
 
 | Selector | Time | Temp / spin | Notes |
 |---:|---|---|---|
 | 0 | — | — | OFF — `START` gives error **E15** |
-| 1 | 59 min | 40° · 1000 | |
-| 2 | (valid) | — | confirmed valid in earlier captures; duration not measured |
-| 3 | 2h29 | 40° · 1000 | cottons-class |
-| 4 | 2h39 | 40° · 1000 | cottons-class |
-| 5 | 1h15 | **respects** your temp/spin | |
-| 6 | 54 min | **respects** your temp/spin | default ★ |
+| 1 | 59 min | **honours** yours | verified at 60 °C in daily use |
+| 2 | **9h09** | **honours** yours | long soak; previously unmeasured |
+| 3 | 2h29 | **honours** yours | verified: sent 60 °/index 4 → displays `60@1400` |
+| 4 | 2h36 | **honours** yours | verified at 60 °/1400 |
+| 5 | 1h15 | **honours** yours | |
+| 6 | 54 min | **honours** yours | |
 | 7 | 10 min | forces **cold · 400** | rapid/quick |
-| 8 | 28 min | forces **cold** · 1000 | rapid |
-| 9 | 2h19 | 40° · 1000 | cottons-class |
-| 10 | 48 min | 40° · 1000 | rapid |
+| 8 | 28 min | forces **cold · 1000** | rapid |
+| 9 | 2h16 | **honours** yours | verified at 60 °/1400 |
+| 10 | 48 min | **honours** yours | verified at 60 °/1400 |
 | 11 | 2h00 | forces **cold · no spin** | wool/delicate-class |
 | 12 | 2h08 | forces **cold · no spin** | delicate-class |
-| 13 | 2h08 | (identical to 12) | |
+| 13 | 2h08 | forces **cold · no spin** | identical to 12 |
 | 14 | 59 min | **dryer** — "ready to iron" | drying program (washer-dryer) |
-| 15 | 2h16 | 40° · 1000 | cottons-class |
+| 15 | 2h16 | **honours** yours | verified at 60 °/1400 |
 
 Notes:
-- Most programs **force their own temp/spin** (the values you send are ignored); only `5`
-  and `6` honour them. Spin displays capped at 1000 even when 1200 is requested.
+- **Most programs honour the temperature and spin you send**, up to **1400 rpm**. Only `7`,
+  `8`, `11`, `12`, `13` override you, and `14` is the dryer. There is no 1200 step and no
+  spin cap on the programs that honour you.
+- **Durations are the machine's estimate and drift a few minutes with the settings sent** —
+  selectors `4` and `9` each read 3 minutes shorter at 60 °C/1400 than at 40 °C/1200. Treat
+  them as approximate.
+- Selectors `9` and `15` both display 2h16; `13` behaves identically to `12`.
 - This index is **per-unit dial order**, so the measured times are authoritative. The
   programs printed on the dial and in the user manual that line up by duration: Rapid
   14/30/44, Daily 59, Cottons, Wool, Delicates, Ecomix 20, plus the dryer programs.
