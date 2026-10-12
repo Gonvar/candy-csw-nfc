@@ -27,7 +27,7 @@ such.
 | **Record type** | NDEF external type `candy.com:transp.ctrl` |
 | **Write password** | M24SR factory default, 16 zero bytes ([§3](#3-write-password)) |
 | **Key finding** | The machine acts on a command only after an M24SR **GPO low→high pulse** ([§9](#9-the-post-write-ack-handshake--the-crux)) |
-| **Code** | Python reference implementation ([`candy_cycle.py`](candy_cycle.py)) |
+| **Code** | Python reference ([`candy_cycle.py`](candy_cycle.py)); Android apps ([`android/`](android/README.md) writer, [`app/`](app/) panel); iOS scaffold ([`ios/`](ios/README.md), read-only) |
 
 ### Where to go
 
@@ -35,9 +35,10 @@ such.
 |---|---|
 | Understand the protocol | [§1–§8](#1-hardware--transport) (hardware, files, password, opcodes, records, CRC) |
 | Make the machine actually start a cycle | [§9 handshake](#9-the-post-write-ack-handshake--the-crux) and [§10 APDU sequences](#10-full-apdu-sequences) |
-| Build my own client | [`candy_cycle.py`](candy_cycle.py) and [§10](#10-full-apdu-sequences) |
+| Build my own client | [`candy_cycle.py`](candy_cycle.py), [`android/`](android/README.md), [`app/`](app/), [`ios/`](ios/README.md) and [§10](#10-full-apdu-sequences) |
 | Map programs for my own model | [§11](#11-capture--map-your-own-programs) |
 | See what was tried and failed | [§12](#12-what-works-what-doesnt) |
+| Help test the open questions | [`TESTS.md`](TESTS.md) |
 
 ### FAQ
 
@@ -189,8 +190,8 @@ Example validated command (selector 6, 30 °C, 400 spin):
 
 A **21-byte** record (NLEN = `0x15`). **Unverified on the CSW 475D/5-S:** no STORE record
 has been captured from, or accepted by, the unit this repo was validated on — every
-validated command here is a START (§5). Treat this layout as a working hypothesis to test,
-not as established fact. Field meanings in the
+validated command here is a START (§5). Treat this layout as a working hypothesis to test
+([`TESTS.md`](TESTS.md), T4/T11/T12), not as established fact. Field meanings in the
 table below are labels, and bytes `[14]`, `[15]`, `[17]`, `[18]` in particular are of
 unknown function.
 

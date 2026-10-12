@@ -1,0 +1,446 @@
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Candy Panel</title>
+<style>
+:root{
+  --ink:#14110D;
+  --ink-2:#1E1A15;
+  --ink-3:#2A241C;
+  --line:#3A3228;
+  --bone:#EDE4D5;
+  --bone-dim:#9A8F7E;
+  --bone-faint:#6B6153;
+  --signal:#FF6B1A;
+  --signal-dim:#8A3D12;
+  --go:#7DBE6B;
+  --warn:#E8B33C;
+  --r:3px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:var(--ink);
+  color:var(--bone);
+  font-family:-apple-system,"Roboto","Helvetica Neue",sans-serif;
+  font-size:15px;
+  overflow-x:hidden;
+  -webkit-user-select:none;user-select:none;
+  padding-bottom:196px;
+}
+/* warm light bleed from the top, like a lit panel */
+body::before{
+  content:"";position:fixed;left:0;right:0;top:0;height:320px;pointer-events:none;z-index:0;
+  background:radial-gradient(120% 100% at 50% 0%,rgba(255,107,26,.13) 0%,rgba(255,107,26,.03) 45%,transparent 72%);
+}
+/* fine grain so the dark never reads as flat */
+body::after{
+  content:"";position:fixed;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:1;opacity:.22;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='.5'/></svg>");
+}
+.wrap{position:relative;z-index:2;padding:0 18px}
+
+/* ---- masthead ---- */
+header{padding:20px 0 20px;border-bottom:1px solid var(--line);margin-bottom:22px}
+.brand{display:flex;align-items:baseline}
+h1{
+  font-size:19px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;
+}
+h1 em{font-style:normal;color:var(--signal)}
+.model{
+  margin-left:auto;font-family:"Roboto Mono",monospace;font-size:10px;
+  letter-spacing:.14em;color:var(--bone-faint);text-transform:uppercase;
+}
+.tagline{
+  margin-top:7px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--bone-dim);
+}
+
+/* ---- section headers ---- */
+.sec{display:flex;align-items:center;margin:26px 0 12px}
+.sec h2{font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--bone-dim)}
+.sec .rule{flex:1;height:1px;background:var(--line);margin-left:12px}
+.sec .val{
+  font-family:"Roboto Mono",monospace;font-size:11px;letter-spacing:.08em;
+  color:var(--signal);margin-left:12px;
+}
+
+/* ---- favourites ---- */
+.faves{display:flex}
+.fave{
+  flex:1;background:var(--ink-2);border:1px solid var(--signal-dim);border-radius:var(--r);
+  padding:15px 13px;text-align:left;color:inherit;font:inherit;cursor:pointer;margin-left:8px;
+  transition:background .13s,border-color .13s,transform .08s;
+}
+.fave:first-child{margin-left:0}
+.fave:active{transform:scale(.975)}
+.fave .fn{display:block;font-size:15px;font-weight:700;letter-spacing:.03em}
+.fave .fs{
+  display:block;margin-top:5px;font-family:"Roboto Mono",monospace;font-size:11px;
+  color:var(--signal);letter-spacing:.04em;
+}
+.fave[aria-pressed="true"]{background:var(--ink-3);border-color:var(--signal)}
+
+/* ---- program grid ---- */
+.progs{display:grid;grid-template-columns:1fr 1fr;grid-gap:8px}
+.prog{
+  position:relative;background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r);
+  padding:13px 12px 11px;text-align:left;color:inherit;font:inherit;cursor:pointer;
+  transition:background .13s,border-color .13s,transform .08s;
+  overflow:hidden;
+}
+.prog:active{transform:scale(.975)}
+.prog .num{
+  font-family:"Roboto Mono",monospace;font-size:10px;color:var(--bone-faint);
+  letter-spacing:.1em;display:block;margin-bottom:5px;
+}
+.prog .dur{
+  font-family:"Roboto Mono",monospace;font-size:23px;font-weight:500;letter-spacing:-.01em;
+  display:block;line-height:1;
+}
+.prog .desc{
+  display:block;margin-top:6px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--bone-dim);line-height:1.35;
+}
+/* the honest bit: does this program respect what you choose? */
+.prog .flag{
+  display:inline-block;margin-top:8px;font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 5px;border-radius:2px;
+}
+.prog .flag.test{background:rgba(232,179,60,.16);color:var(--warn)}
+.prog .flag.free{background:rgba(125,190,107,.14);color:var(--go)}
+.prog .flag.fixed{background:rgba(154,143,126,.11);color:var(--bone-faint)}
+.prog[aria-pressed="true"]{
+  background:var(--ink-3);border-color:var(--signal);
+}
+.prog[aria-pressed="true"] .dur{color:var(--signal)}
+.prog[aria-pressed="true"]::before{
+  content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--signal);
+}
+
+/* ---- time / special chips ---- */
+.chips{display:flex;flex-wrap:wrap;margin:-4px}
+.chip{
+  flex:1 0 22%;margin:4px;background:var(--ink-2);border:1px solid var(--line);
+  border-radius:var(--r);padding:16px 6px;color:inherit;font:inherit;cursor:pointer;
+  transition:background .13s,border-color .13s,transform .08s;text-align:center;
+}
+.chip:active{transform:scale(.96)}
+.chip .cd{
+  display:block;font-family:"Roboto Mono",monospace;font-size:19px;font-weight:500;line-height:1;
+}
+.chip .cn{
+  display:block;margin-top:5px;font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--bone-faint);
+}
+.chip[aria-pressed="true"]{background:var(--ink-3);border-color:var(--signal)}
+.chip[aria-pressed="true"] .cd{color:var(--signal)}
+#specials .chip{flex:1 0 30%}
+
+/* ---- segmented controls ---- */
+.segs{display:flex;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.seg{
+  flex:1;background:var(--ink-2);color:var(--bone-dim);border:0;border-left:1px solid var(--line);
+  padding:15px 2px 13px;font:inherit;font-size:13px;cursor:pointer;
+  transition:background .13s,color .13s;
+}
+.seg:first-child{border-left:0}
+.seg .u{
+  display:block;font-family:"Roboto Mono",monospace;font-size:9px;letter-spacing:.08em;
+  color:var(--bone-faint);margin-top:3px;
+}
+.seg[aria-pressed="true"]{background:var(--signal);color:#1A0E05;font-weight:700}
+.seg[aria-pressed="true"] .u{color:rgba(26,14,5,.62)}
+.group.locked .segs{opacity:.34}
+.group.locked .seg{pointer-events:none}
+.lockmsg{
+  display:none;margin-top:8px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--warn);
+}
+.group.locked .lockmsg{display:block}
+
+/* ---- advanced disclosure ---- */
+.adv-t{
+  display:block;width:100%;margin-top:26px;background:transparent;border:1px dashed var(--line);
+  border-radius:var(--r);color:var(--bone-faint);padding:13px;font:inherit;font-size:10px;
+  letter-spacing:.2em;text-transform:uppercase;cursor:pointer;
+}
+.adv-t:active{color:var(--signal);border-color:var(--signal)}
+.adv{display:none}
+.adv.on{display:block}
+.note{
+  margin-top:9px;font-size:10.5px;line-height:1.6;color:var(--bone-faint);letter-spacing:.02em;
+}
+
+/* ---- action bar ---- */
+.bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:5;
+  background:var(--ink);border-top:1px solid var(--line);
+  padding:12px 18px 14px;
+}
+.status{
+  display:flex;align-items:center;font-size:11px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--bone-dim);margin-bottom:10px;min-height:14px;
+}
+.dot{
+  width:7px;height:7px;border-radius:50%;background:var(--bone-faint);margin-right:9px;flex:none;
+}
+.dot.live{background:var(--signal);animation:pulse 1.15s ease-in-out infinite}
+.dot.ok{background:var(--go)}
+.dot.bad{background:var(--warn)}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.82)}}
+.willsend{
+  font-family:"Roboto Mono",monospace;font-size:11px;color:var(--signal);
+  letter-spacing:.06em;margin:-4px 0 10px;
+}
+.go{
+  width:100%;border:0;border-radius:var(--r);background:var(--signal);color:#1A0E05;
+  padding:19px;font:inherit;font-size:14px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;
+  cursor:pointer;transition:transform .08s,background .13s;
+}
+.go:active{transform:scale(.985)}
+.go.armed{background:var(--warn);animation:breathe 1.5s ease-in-out infinite}
+@keyframes breathe{0%,100%{opacity:1}50%{opacity:.72}}
+.go.busy{background:var(--ink-3);color:var(--bone-dim)}
+.sub{
+  display:flex;margin-top:9px;
+}
+.sub button{
+  flex:1;background:transparent;border:1px solid var(--line);border-radius:var(--r);
+  color:var(--bone-dim);padding:11px;font:inherit;font-size:10px;letter-spacing:.15em;
+  text-transform:uppercase;cursor:pointer;margin-left:8px;
+}
+.sub button:first-child{margin-left:0}
+.sub button:active{border-color:var(--signal);color:var(--signal)}
+
+/* ---- log ---- */
+.log{
+  margin-top:12px;background:var(--ink-2);border:1px solid var(--line);border-radius:var(--r);
+  padding:11px;font-family:"Roboto Mono",monospace;font-size:10px;line-height:1.65;
+  color:var(--bone-faint);white-space:pre-wrap;word-break:break-all;max-height:210px;overflow-y:auto;
+  -webkit-user-select:text;user-select:text;display:none;
+}
+.log.on{display:block}
+.log b{color:var(--bone-dim);font-weight:400}
+.log .ok{color:var(--go)}
+.log .er{color:var(--warn)}
+
+/* staggered entrance */
+.rise{opacity:0;transform:translateY(9px);animation:rise .42s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+</style>
+
+<div class="wrap">
+  <header class="rise" style="animation-delay:.02s">
+    <div class="brand">
+      <h1>Candy<em>·</em>Panel</h1>
+      <span class="model">CSW 475D</span>
+    </div>
+    <div class="tagline">Cycle console — near-field</div>
+  </header>
+
+  <div class="sec rise" style="animation-delay:.04s">
+    <h2>Favourites</h2><span class="rule"></span>
+  </div>
+  <div class="faves rise" id="faves" style="animation-delay:.05s"></div>
+
+  <div class="sec rise" style="animation-delay:.06s">
+    <h2>Time</h2><span class="rule"></span><span class="val" id="pv">—</span>
+  </div>
+  <div class="chips rise" id="times" style="animation-delay:.09s"></div>
+
+  <div class="group rise" id="g-temp" style="animation-delay:.13s">
+    <div class="sec"><h2>Temperature</h2><span class="rule"></span></div>
+    <div class="segs" id="temp"></div>
+    <div class="lockmsg">↑ set by this program — your choice is ignored</div>
+  </div>
+
+  <div class="group rise" id="g-spin" style="animation-delay:.16s">
+    <div class="sec"><h2>Spin</h2><span class="rule"></span></div>
+    <div class="segs" id="spin"></div>
+    <div class="lockmsg">↑ set by this program — your choice is ignored</div>
+  </div>
+
+  <div class="group rise" style="animation-delay:.19s">
+    <div class="sec"><h2>Extra rinse</h2><span class="rule"></span></div>
+    <div class="segs" id="xr"></div>
+  </div>
+
+  <button class="adv-t rise" id="advt" style="animation-delay:.22s">Advanced ▾</button>
+  <div class="adv" id="adv">
+    <div class="group">
+      <div class="sec"><h2>Special cycles</h2><span class="rule"></span></div>
+      <div class="chips" id="specials"></div>
+      <div class="note">These set their own temperature and spin, so the pickers above are
+        ignored while one is selected.</div>
+    </div>
+    <div class="group" style="margin-top:22px">
+      <div class="sec"><h2>Soil</h2><span class="rule"></span></div>
+      <div class="segs" id="soil"></div>
+      <div class="note">Neither the Candy app nor the machine exposes this. It does not
+        change the cycle length — it is believed to affect wash intensity only. Leave at 1
+        unless you are experimenting.</div>
+    </div>
+  </div>
+
+  <pre class="log" id="log"></pre>
+</div>
+
+<div class="bar">
+  <div class="status"><span class="dot" id="dot"></span><span id="msg">Ready</span></div>
+  <div class="willsend" id="ws"></div>
+  <button class="go" id="go">Send cycle</button>
+  <div class="sub">
+    <button id="read">Read status</button>
+    <button id="tlog">Log</button>
+  </div>
+</div>
+
+<script>
+// All measured on this unit at 60C/1400.
+// TIMES = programs that accept whatever temp/spin you give them. The duration IS the
+// program -- the machine has no free-form time field, so these are the times available.
+// Durations are the machine's estimate and drift a few minutes with settings.
+var TIMES = [
+  {d:"48m",  sel:10},
+  {d:"54m",  sel:6},
+  {d:"59m",  sel:1},
+  {d:"1h15", sel:5},
+  {d:"2h16", sel:15},
+  {d:"2h29", sel:3},
+  {d:"2h36", sel:4},
+  {d:"9h09", sel:2}
+];
+// These override your temp/spin, so they can't be expressed as time+temp+spin.
+var SPECIALS = [
+  {n:"Rapid",     d:"10m",  sel:7,  fx:"cold · 400"},
+  {n:"Rapid",     d:"28m",  sel:8,  fx:"cold · 1000"},
+  {n:"Wool",      d:"2h00", sel:11, fx:"cold · no spin"},
+  {n:"Delicates", d:"2h08", sel:12, fx:"cold · no spin"},
+  {n:"Dryer",     d:"59m",  sel:14, fx:"iron dry"}
+];
+// P09 (2h16) omitted: same duration as P15. P13 omitted: identical to P12.
+
+// The two cycles actually used day to day.
+var FAVES = [
+  {n:"Shirts",     sub:"1h15 · 30°", sel:5, temp:2, spin:1, soil:0, xr:0},
+  {n:"Everything", sub:"59m · 60°",  sel:1, temp:4, spin:3, soil:0, xr:0}
+];
+var TEMPS = [{v:0,l:"Cold"},{v:1,l:"20",u:"°C"},{v:2,l:"30",u:"°C"},{v:3,l:"40",u:"°C"},{v:4,l:"60",u:"°C"}];
+var SPINS = [{v:0,l:"Off"},{v:1,l:"400",u:"rpm"},{v:2,l:"800",u:"rpm"},{v:3,l:"1000",u:"rpm"},{v:4,l:"1400",u:"rpm"}];
+var SOILS = [{v:0,l:"1"},{v:1,l:"2"},{v:2,l:"3"},{v:3,l:"4"}];
+var XRS   = [{v:0,l:"None"},{v:1,l:"+1"},{v:2,l:"+2"},{v:3,l:"+3"}];
+
+var st = {sel:5, temp:2, spin:1, soil:0, xr:0};   // defaults to Shirts
+var $ = function(id){return document.getElementById(id)};
+
+function buildTimes(){
+  var h="";
+  for(var i=0;i<TIMES.length;i++)
+    h+='<button class="chip" data-s="'+TIMES[i].sel+'"><span class="cd">'+TIMES[i].d+'</span></button>';
+  $("times").innerHTML=h;
+  h="";
+  for(var i=0;i<SPECIALS.length;i++){
+    var x=SPECIALS[i];
+    h+='<button class="chip" data-s="'+x.sel+'"><span class="cd">'+x.d+'</span>'
+     + '<span class="cn">'+x.n+'</span></button>';
+  }
+  $("specials").innerHTML=h;
+}
+function buildFaves(){
+  var h="";
+  for(var i=0;i<FAVES.length;i++){
+    h+='<button class="fave" data-i="'+i+'"><span class="fn">'+FAVES[i].n+'</span>'
+     + '<span class="fs">'+FAVES[i].sub+'</span></button>';
+  }
+  $("faves").innerHTML=h;
+}
+function buildSegs(id, arr, key){
+  var h="";
+  for(var i=0;i<arr.length;i++){
+    var o=arr[i];
+    h+='<button class="seg" data-v="'+o.v+'" aria-pressed="'+(o.v===st[key])+'">'
+     + o.l + (o.u?'<span class="u">'+o.u+'</span>':'<span class="u">&nbsp;</span>') + '</button>';
+  }
+  $(id).innerHTML=h;
+}
+function cur(){
+  for(var i=0;i<TIMES.length;i++)    if(TIMES[i].sel===st.sel)    return {d:TIMES[i].d, free:true};
+  for(var i=0;i<SPECIALS.length;i++) if(SPECIALS[i].sel===st.sel) return {d:SPECIALS[i].d, free:false, fx:SPECIALS[i].fx};
+  return null;
+}
+
+function render(){
+  var p=cur();
+  $("pv").textContent = p ? (p.d + (p.free?"":" · "+p.fx)) : "—";
+  // lock temp/spin when the program overrides them -- this is the honest bit
+  $("g-temp").className = "group rise" + (p && !p.free ? " locked":"");
+  $("g-spin").className = "group rise" + (p && !p.free ? " locked":"");
+  var fs=$("faves").children;
+  for(var j=0;j<fs.length;j++){
+    var f=FAVES[j];
+    fs[j].setAttribute("aria-pressed",
+      f.sel===st.sel && f.temp===st.temp && f.spin===st.spin && f.xr===st.xr);
+  }
+  var cs=document.querySelectorAll(".chip");
+  for(var i=0;i<cs.length;i++) cs[i].setAttribute("aria-pressed", cs[i].getAttribute("data-s")==st.sel);
+  syncSeg("temp","temp"); syncSeg("spin","spin"); syncSeg("soil","soil"); syncSeg("xr","xr");
+  var tl=["Cold","20\u00B0","30\u00B0","40\u00B0","60\u00B0"];
+  var sl=["no spin","400","800","1000","1400"];
+  $("ws").textContent = "sending  "+(p?p.d:"?")
+      + "  \u00B7  "+tl[st.temp]+"  \u00B7  "+sl[st.spin]
+      + (st.xr? "  \u00B7  +"+st.xr+" rinse":"");
+  push();
+}
+function syncSeg(id,key){
+  var c=$(id).children;
+  for(var i=0;i<c.length;i++) c[i].setAttribute("aria-pressed", c[i].getAttribute("data-v")==st[key]);
+}
+function push(){
+  if(window.Android && Android.setParams) Android.setParams(st.sel,st.temp,st.spin,st.soil,st.xr);
+}
+
+document.addEventListener("click", function(e){
+  var b=e.target.closest ? e.target.closest("button") : null;
+  if(!b) return;
+  if(b.className.indexOf("fave")===0){
+    var f=FAVES[+b.getAttribute("data-i")];
+    st.sel=f.sel; st.temp=f.temp; st.spin=f.spin; st.soil=f.soil; st.xr=f.xr;
+    render(); window.scrollTo(0,0); return;
+  }
+  if(b.className.indexOf("chip")===0){ st.sel=+b.getAttribute("data-s"); render(); return; }
+  if(b.className.indexOf("seg")===0){
+    var key=b.parentNode.id; st[key]=+b.getAttribute("data-v"); render(); return;
+  }
+});
+$("go").onclick=function(){ if(window.Android) Android.arm(); };
+$("read").onclick=function(){ if(window.Android) Android.armRead(); };
+$("advt").onclick=function(){
+  var a=$("adv"), on=a.className.indexOf("on")>=0;
+  a.className = on? "adv":"adv on";
+  $("advt").textContent = on? "Advanced \u25BE":"Advanced \u25B4";
+};
+$("tlog").onclick=function(){
+  var l=$("log"); l.className = (l.className.indexOf("on")>=0) ? "log" : "log on";
+};
+
+// ---- called from Java ----
+function setStatus(text, state){
+  $("msg").textContent=text;
+  $("dot").className="dot"+(state?" "+state:"");
+  var g=$("go");
+  g.className="go"+(state==="live"?" armed":(state==="busy"?" busy":""));
+  if(state==="live") g.textContent="Hold to the washer";
+  else if(state==="busy") g.textContent="Working…";
+  else g.textContent="Send cycle";
+}
+function addLog(line, kind){
+  var l=$("log");
+  l.innerHTML += '<span class="'+(kind||"")+'">'+line.replace(/</g,"&lt;")+'</span>';
+  l.scrollTop=l.scrollHeight;
+}
+function clearLog(){ $("log").innerHTML=""; }
+
+buildFaves();
+buildTimes();
+buildSegs("temp",TEMPS,"temp"); buildSegs("spin",SPINS,"spin");
+buildSegs("soil",SOILS,"soil"); buildSegs("xr",XRS,"xr");
+render();
+</script>
