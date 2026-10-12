@@ -189,8 +189,8 @@ Example validated command (selector 6, 30 °C, 400 spin):
 
 A **21-byte** record (NLEN = `0x15`). **Unverified on the CSW 475D/5-S:** no STORE record
 has been captured from, or accepted by, the unit this repo was validated on — every
-validated command here is a START (§5). Treat this layout as a working hypothesis to test
-(see [`TESTS.md`](TESTS.md) once published), not as established fact. Field meanings in the
+validated command here is a START (§5). Treat this layout as a working hypothesis to test,
+not as established fact. Field meanings in the
 table below are labels, and bytes `[14]`, `[15]`, `[17]`, `[18]` in particular are of
 unknown function.
 
