@@ -1,8 +1,12 @@
-# Candy CSW 475D — NFC protocol reference
+# Candy CSW 475D NFC Protocol — Reverse-Engineered Washer-Dryer Reference
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Protocol: NFC Type 4 / ISO 14443-4](https://img.shields.io/badge/NFC-Type%204A%20%7C%20ISO%2014443--4-informational)
+![Chip: ST M24SR02-Y](https://img.shields.io/badge/chip-ST%20M24SR02--Y-lightgrey)
 
 Complete, on-machine-validated documentation of the **NFC protocol** used by the
-**Candy CSW 475D/5-S** washer-dryer, so you can read its status and **program/start a
-custom wash cycle** without the official app.
+**Candy CSW 475D/5-S** washer-dryer (Candy Simply-Fi / Smart Touch NFC models), so you can
+read its status and **program/start a custom wash cycle** without the official app.
 
 This repo is **information, not a product.** It is everything needed to implement a
 client on any platform (Android `IsoDep`, iOS Core NFC, libnfc, PN532, Proxmark3,
@@ -12,6 +16,51 @@ CRC and the command builder lives in [`candy_cycle.py`](candy_cycle.py).
 Validated against a real unit: the full write sequence below makes the machine load and
 auto-start a cycle. Where something is a hypothesis or a dead end, it is labelled as
 such.
+
+### At a glance
+
+| | |
+|---|---|
+| **Appliance** | Candy CSW 475D/5-S washer-dryer (other Candy/Haier NFC models likely similar, untested) |
+| **NFC chip** | ST M24SR02-Y dynamic NFC tag, NFC Forum Type 4A, I²C to the machine's MCU |
+| **Transport** | ISO 7816-4 APDUs over ISO 14443-4 (`IsoDep`) |
+| **Record type** | NDEF external type `candy.com:transp.ctrl` |
+| **Write password** | M24SR factory default, 16 zero bytes ([§3](#3-write-password)) |
+| **Key finding** | The machine acts on a command only after an M24SR **GPO low→high pulse** ([§9](#9-the-post-write-ack-handshake--the-crux)) |
+| **Code** | Python reference implementation ([`candy_cycle.py`](candy_cycle.py)) |
+
+### Where to go
+
+| I want to… | Read |
+|---|---|
+| Understand the protocol | [§1–§8](#1-hardware--transport) (hardware, files, password, opcodes, records, CRC) |
+| Make the machine actually start a cycle | [§9 handshake](#9-the-post-write-ack-handshake--the-crux) and [§10 APDU sequences](#10-full-apdu-sequences) |
+| Build my own client | [`candy_cycle.py`](candy_cycle.py) and [§10](#10-full-apdu-sequences) |
+| Map programs for my own model | [§11](#11-capture--map-your-own-programs) |
+| See what was tried and failed | [§12](#12-what-works-what-doesnt) |
+
+### FAQ
+
+**How do I start a Candy washing machine over NFC without the app?**
+Select the NDEF app, select file `0002`, `VERIFY` the 16-zero write password, write the
+18-byte `START_PROGRAM_CYCLE` record, commit its length, then pulse the M24SR GPO pin
+low→high while the RF field stays up. Full byte-level sequence in [§10](#10-full-apdu-sequences).
+
+**Why does the machine ignore my NFC write?**
+Writing the bytes is necessary but not sufficient: the MCU does not poll the EEPROM, it waits
+for an interrupt edge on the tag's GPO pin. See [§9](#9-the-post-write-ack-handshake--the-crux).
+Dropping the RF field to "give the MCU the bus" does not work ([§12](#12-what-works-what-doesnt)).
+
+**What NFC chip does the Candy CSW 475D use?**
+An ST M24SR02-Y (ATQA `0x0042`, SAK `0x20`), exposing an NFC Forum Type 4 tag with a
+read-only status file and a password-protected command file ([§1](#1-hardware--transport), [§2](#2-tag-file-system-type-4)).
+
+**Can I do this from an iPhone?**
+Core NFC exposes raw APDUs over `ISO7816`, so reading and writing are possible; whether the
+GPO pulse can be triggered from iOS is still open ([§9](#9-the-post-write-ack-handshake--the-crux)).
+
+**What is the Candy NFC CRC?**
+CRC-16, polynomial `0x6363`, validated against a real tag read ([§8](#8-crc-16--validated)).
 
 ---
 
