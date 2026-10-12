@@ -27,7 +27,7 @@ such.
 | **Record type** | NDEF external type `candy.com:transp.ctrl` |
 | **Write password** | M24SR factory default, 16 zero bytes ([§3](#3-write-password)) |
 | **Key finding** | The machine acts on a command only after an M24SR **GPO low→high pulse** ([§9](#9-the-post-write-ack-handshake--the-crux)) |
-| **Code** | Python reference implementation ([`candy_cycle.py`](candy_cycle.py)) |
+| **Code** | Python reference ([`candy_cycle.py`](candy_cycle.py)); Android apps ([`android/`](android/README.md) writer, [`app/`](app/) panel); iOS scaffold ([`ios/`](ios/README.md), read-only) |
 
 ### Where to go
 
@@ -35,9 +35,10 @@ such.
 |---|---|
 | Understand the protocol | [§1–§8](#1-hardware--transport) (hardware, files, password, opcodes, records, CRC) |
 | Make the machine actually start a cycle | [§9 handshake](#9-the-post-write-ack-handshake--the-crux) and [§10 APDU sequences](#10-full-apdu-sequences) |
-| Build my own client | [`candy_cycle.py`](candy_cycle.py) and [§10](#10-full-apdu-sequences) |
+| Build my own client | [`candy_cycle.py`](candy_cycle.py), [`android/`](android/README.md), [`app/`](app/), [`ios/`](ios/README.md) and [§10](#10-full-apdu-sequences) |
 | Map programs for my own model | [§11](#11-capture--map-your-own-programs) |
 | See what was tried and failed | [§12](#12-what-works-what-doesnt) |
+| Help test the open questions | [`TESTS.md`](TESTS.md) |
 
 ### FAQ
 
@@ -187,9 +188,12 @@ Example validated command (selector 6, 30 °C, 400 spin):
 
 ## 6. STORE_PROGRAM_CYCLE record (action `0x0A`) — structure
 
-A **21-byte** record (NLEN = `0x15`). Structure inferred from observed commands; field
-value encodings less proven than START. Carries the full program definition with min/max
-bounds the firmware enforces.
+A **21-byte** record (NLEN = `0x15`). **Unverified on the CSW 475D/5-S:** no STORE record
+has been captured from, or accepted by, the unit this repo was validated on — every
+validated command here is a START (§5). Treat this layout as a working hypothesis to test
+([`TESTS.md`](TESTS.md), T4/T11/T12), not as established fact. Field meanings in the
+table below are labels, and bytes `[14]`, `[15]`, `[17]`, `[18]` in particular are of
+unknown function.
 
 ```
  idx  val   meaning
@@ -216,13 +220,9 @@ bounds the firmware enforces.
  [20] CRC lo  }
 ```
 
-The fields correspond, by observed effect, to:
-`selector_position`, `default_temperature`/`maximum_temperature`,
-`default_spin_speed`/`maximum_spin_speed`,
-`default_soil_level`/`minimum_soil_level`/`maximum_soil_level`,
-`available_options`/`av0`/`av1`/`av2` (option bitmasks),
-and duration/remaining-time fields. The `min*`/`max*` values are the bounds the firmware
-enforces; set the `default_*` values within them.
+The `min*`/`max*` style bounds are what the firmware is expected to enforce; set any
+default values within them. Out-of-range values are rejected (`6A 80` / `6B 00`), so probing
+one byte at a time is a safe way to find out what is accepted.
 
 ## 7. Index tables (parameter encodings)
 

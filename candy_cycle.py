@@ -4,7 +4,7 @@ Candy CSW 475D — NFC command payload + APDU builders.
 
 Two command builders:
   - build_start_cycle()  -> action 0x0b, 18 bytes  (the VALIDATED path that drives the machine)
-  - build_store_program_cycle() -> action 0x0a, 21 bytes  (earlier STORE path; structure only)
+  - build_store_program_cycle() -> action 0x0a, 21 bytes  (UNVERIFIED on this unit; layout is a hypothesis)
 
 CRC validated against a real tag read (reproduces 9C 40). See README.md for the
 field index tables and the post-write ACK handshake.
@@ -25,7 +25,13 @@ def build_store_program_cycle(
     chart=0, sub_cycle=0, def_temp=0, max_temp=0, def_soil=0,
     def_spin=0, max_spin=0, opt1=0, opt2=0, opt3=0, charge=0, b17=0, b18=0,
 ) -> bytes:
-    """Return the 21-byte NDEF command record for STORE_PROGRAM_CYCLE (action 10)."""
+    """Return the 21-byte NDEF command record for STORE_PROGRAM_CYCLE (action 10).
+
+    UNVERIFIED: no STORE record has been accepted by the CSW 475D/5-S this repo was validated
+    on (only START has). The layout is a working hypothesis. Bytes 14, 15, 17, 18 are of
+    unknown function -- the opt2/opt3/b17/b18 names are placeholders. Probe one byte at a
+    time; out-of-range values are rejected with 6A 80 / 6B 00.
+    """
     buf = bytearray(21)
     buf[0] = 0xD4            # NDEF external record header (MB+ME+SR, TNF=4)
     buf[1] = 0x01            # type length
@@ -58,7 +64,7 @@ def build_start_cycle(
     """Return the 18-byte NDEF command record for START_PROGRAM_CYCLE (action 0x0b).
 
     This is the VALIDATED path that drives the machine. Index encodings:
-      temp: 0=cold 1=20 2=30 3=40 4=60   spin: 0=none 1=400 2=800 3=1000/1200 4=max
+      temp: 0=cold 1=20 2=30 3=40 4=60   spin: 0=none 1=400 2=800 3=1000 4=1400
       soil: 0-3   delay: 0xFF = off
     Defaults reproduce a captured known-good command (selector 6, 30C, 400 spin).
     """
