@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this protocol documentation, please cite it as below."
+title: "Candy CSW 475D NFC protocol reference"
+abstract: >-
+  Reverse-engineered, on-machine-validated documentation of the NFC protocol
+  (ST M24SR02-Y, NFC Forum Type 4A, NDEF external type candy.com:transp.ctrl)
+  used by the Candy CSW 475D/5-S washer-dryer, including the GPO low-to-high
+  handshake required to start a custom wash cycle, with Python, Android and
+  iOS reference code.
+type: software
+authors:
+  - alias: "Gonvar"
+repository-code: "https://github.com/Gonvar/candy-csw-nfc"
+license: MIT
+keywords:
+  - NFC
+  - ISO 14443
+  - NDEF
+  - ST M24SR
+  - Candy
+  - washing machine
+  - washer-dryer
+  - reverse engineering
+  - interoperability
+  - Core NFC
+  - IsoDep
